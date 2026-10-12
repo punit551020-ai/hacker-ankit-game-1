@@ -28,7 +28,6 @@ export default defineConfig(({ mode }) => {
           ],
           manifestFilename: 'manifest.json',
           manifest: {
-            id: './',
             name: 'Hacker Ankit Game',
             short_name: 'Hacker Ankit',
             description: 'High-speed synthwave cyber endless runner with infinite procedural levels, upgradeable mecha skins, and dynamic hazards.',

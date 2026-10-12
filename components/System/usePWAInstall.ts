@@ -16,6 +16,34 @@ declare global {
   }
 }
 
+const checkIsAndroid = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  const ua = window.navigator.userAgent.toLowerCase();
+  const navData = (window.navigator as unknown as { userAgentData?: { platform?: string } }).userAgentData;
+  const platform = navData?.platform?.toLowerCase() || '';
+  return /android/.test(ua) || platform === 'android';
+};
+
+const checkIsIOS = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  const ua = window.navigator.userAgent.toLowerCase();
+  return (
+    /iphone|ipad|ipod/.test(ua) ||
+    (window.navigator.platform === 'MacIntel' && window.navigator.maxTouchPoints > 1)
+  );
+};
+
+const checkIsMobile = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  if (checkIsAndroid() || checkIsIOS()) return true;
+  const ua = window.navigator.userAgent.toLowerCase();
+  return (
+    /mobile|phone|silk|blackberry|opera mini/.test(ua) ||
+    window.matchMedia('(max-width: 768px)').matches ||
+    (window.matchMedia('(pointer: coarse)').matches && window.navigator.maxTouchPoints > 0)
+  );
+};
+
 export function usePWAInstall() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(() => {
     if (typeof window !== 'undefined' && window.__deferredPrompt) {
@@ -32,17 +60,9 @@ export function usePWAInstall() {
     );
   });
 
-  const [isIOS, setIsIOS] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false;
-    const ua = window.navigator.userAgent.toLowerCase();
-    return /iphone|ipad|ipod/.test(ua);
-  });
-
-  const [isAndroid, setIsAndroid] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false;
-    const ua = window.navigator.userAgent.toLowerCase();
-    return /android/.test(ua);
-  });
+  const [isIOS] = useState<boolean>(checkIsIOS);
+  const [isAndroid] = useState<boolean>(checkIsAndroid);
+  const [isMobile] = useState<boolean>(checkIsMobile);
 
   useEffect(() => {
     const updateStatus = () => {
@@ -51,7 +71,7 @@ export function usePWAInstall() {
         (window.navigator as unknown as { standalone?: boolean }).standalone === true;
       setIsInstalled(isStandalone);
 
-      // Pick up deferred prompt if captured earlier
+      // Pick up deferred prompt if captured earlier in global window object
       if (window.__deferredPrompt) {
         setDeferredPrompt(window.__deferredPrompt);
       }
@@ -64,7 +84,7 @@ export function usePWAInstall() {
       const promptEvent = e as BeforeInstallPromptEvent;
       window.__deferredPrompt = promptEvent;
       setDeferredPrompt(promptEvent);
-      console.log('[usePWAInstall] Received beforeinstallprompt event');
+      console.log('[PWA] beforeinstallprompt event captured and ready');
     };
 
     const handlePromptReady = () => {
@@ -76,8 +96,10 @@ export function usePWAInstall() {
     const handleAppInstalled = () => {
       setIsInstalled(true);
       setDeferredPrompt(null);
-      window.__deferredPrompt = null;
-      console.log('[usePWAInstall] App installed event triggered');
+      if (typeof window !== 'undefined') {
+        window.__deferredPrompt = null;
+      }
+      console.log('[PWA] App successfully installed');
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -93,32 +115,61 @@ export function usePWAInstall() {
     };
   }, []);
 
+  /**
+   * Directly triggers the native Chrome install prompt dialog.
+   * If deferredPrompt is not yet set, waits briefly for beforeinstallprompt.
+   */
   const install = async (): Promise<boolean> => {
-    const promptEvent = deferredPrompt || (typeof window !== 'undefined' ? window.__deferredPrompt : null);
+    let promptEvent = deferredPrompt || (typeof window !== 'undefined' ? window.__deferredPrompt : null);
     
+    // If not immediately available on Android / Chrome, wait up to 1200ms
+    if (!promptEvent && typeof window !== 'undefined') {
+      promptEvent = await new Promise<BeforeInstallPromptEvent | null>((resolve) => {
+        let timer: ReturnType<typeof setTimeout>;
+        const onReady = () => {
+          cleanup();
+          resolve(window.__deferredPrompt || null);
+        };
+        const cleanup = () => {
+          clearTimeout(timer);
+          window.removeEventListener('pwa-prompt-ready', onReady);
+          window.removeEventListener('beforeinstallprompt', onReady);
+        };
+        window.addEventListener('pwa-prompt-ready', onReady, { once: true });
+        window.addEventListener('beforeinstallprompt', onReady, { once: true });
+        timer = setTimeout(() => {
+          cleanup();
+          resolve(window.__deferredPrompt || null);
+        }, 1200);
+      });
+    }
+
     if (!promptEvent) {
-      console.warn('[usePWAInstall] No deferred install prompt available');
+      console.warn('[PWA] No deferred install prompt available yet');
       return false;
     }
 
     try {
-      console.log('[usePWAInstall] Triggering prompt()...');
+      console.log('[PWA] Calling deferredPrompt.prompt() directly...');
       await promptEvent.prompt();
       const choice = await promptEvent.userChoice;
-      console.log('[usePWAInstall] User choice outcome:', choice.outcome);
+      console.log('[PWA] User choice outcome:', choice?.outcome);
 
-      if (choice.outcome === 'accepted') {
+      // Consume prompt
+      setDeferredPrompt(null);
+      if (typeof window !== 'undefined') {
+        window.__deferredPrompt = null;
+      }
+
+      if (choice?.outcome === 'accepted') {
         setIsInstalled(true);
-        setDeferredPrompt(null);
-        if (typeof window !== 'undefined') {
-          window.__deferredPrompt = null;
-        }
         return true;
       }
+      return false;
     } catch (err) {
-      console.error('[usePWAInstall] Error executing prompt():', err);
+      console.error('[PWA] Error executing prompt():', err);
+      return false;
     }
-    return false;
   };
 
   const isInstallable = !!(deferredPrompt || (typeof window !== 'undefined' && window.__deferredPrompt));
@@ -128,6 +179,7 @@ export function usePWAInstall() {
     isInstalled,
     isIOS,
     isAndroid,
+    isMobile,
     install,
     deferredPrompt
   };

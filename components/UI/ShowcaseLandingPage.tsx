@@ -35,7 +35,7 @@ interface ShowcaseLandingPageProps {
 }
 
 export const ShowcaseLandingPage: React.FC<ShowcaseLandingPageProps> = ({ onPlayGame }) => {
-  const { isInstallable, isInstalled, isIOS, isAndroid, install } = usePWAInstall();
+  const { isInstallable, isInstalled, isIOS, isAndroid, isMobile, install } = usePWAInstall();
   const [showInstallModal, setShowInstallModal] = useState(false);
   const [demoMuted, setDemoMuted] = useState(true);
   const [activeSkinTab, setActiveSkinTab] = useState(0);
@@ -330,14 +330,26 @@ export const ShowcaseLandingPage: React.FC<ShowcaseLandingPageProps> = ({ onPlay
   }, []);
 
   const handleInstallClick = async () => {
-    if (isInstallable) {
-      const outcome = await install();
-      if (!outcome && !isInstalled) {
-        setShowInstallModal(true);
-      }
-    } else {
-      setShowInstallModal(true);
+    if (isInstalled) {
+      return;
     }
+
+    // On Android Chrome or any mobile browser:
+    // Call install() directly to immediately trigger deferredPrompt.prompt()
+    // without showing text guides or popups
+    if (isInstallable || isAndroid || (!isIOS && isMobile)) {
+      await install();
+      return;
+    }
+
+    // On iOS Safari where beforeinstallprompt is not supported by Apple:
+    if (isIOS) {
+      setShowInstallModal(true);
+      return;
+    }
+
+    // Desktop browsers without direct prompt support
+    setShowInstallModal(true);
   };
 
   return (
@@ -773,10 +785,10 @@ export const ShowcaseLandingPage: React.FC<ShowcaseLandingPageProps> = ({ onPlay
                       <li>Tap <strong className="text-cyan-300">'Add'</strong> in the top right corner.</li>
                     </ol>
                   </div>
-                ) : isAndroid ? (
+                ) : (isAndroid || isMobile) ? (
                   <div className="bg-black/60 p-3.5 rounded-xl border border-cyan-500/30 text-xs font-mono">
                     <div className="flex items-center text-cyan-300 font-bold mb-2">
-                      <Smartphone className="w-4 h-4 mr-1.5" /> Android / Chrome Steps:
+                      <Smartphone className="w-4 h-4 mr-1.5" /> Android / Mobile Chrome Steps:
                     </div>
                     <ol className="list-decimal list-inside space-y-1 text-gray-300">
                       <li>Tap the <strong className="text-cyan-300">Three Dots (⋮)</strong> menu in Chrome.</li>

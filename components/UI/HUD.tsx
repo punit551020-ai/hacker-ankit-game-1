@@ -299,7 +299,8 @@ export const HUD: React.FC<{ onOpenShowcase?: () => void }> = ({ onOpenShowcase 
 
   const currentSkin = getEquippedSkin();
   const theme = getThemeForLevel(level);
-  const { isInstallable, isInstalled, install } = usePWAInstall();
+  const { isInstallable, isInstalled, isAndroid, isMobile, isIOS, install } = usePWAInstall();
+  const canInstall = !isInstalled && (isInstallable || isAndroid || (!isIOS && isMobile));
 
   // Trigger alert banner when hazard tier escalates
   useEffect(() => {
@@ -367,7 +368,7 @@ export const HUD: React.FC<{ onOpenShowcase?: () => void }> = ({ onOpenShowcase 
                             </button>
 
                             {/* Action Buttons Row */}
-                            <div className={`grid ${(!isInstalled && isInstallable) ? 'grid-cols-3' : 'grid-cols-2'} gap-2 w-full`}>
+                            <div className={`grid ${canInstall ? 'grid-cols-3' : 'grid-cols-2'} gap-2 w-full`}>
                                 <button
                                    onClick={() => setMenuShopOpen(true)}
                                    className="py-2.5 px-2 rounded-xl bg-gray-900/90 border border-gray-700 hover:border-cyan-400 text-white font-bold font-mono text-[10px] sm:text-xs flex items-center justify-center transition-all shadow-md hover:bg-gray-800"
@@ -382,7 +383,7 @@ export const HUD: React.FC<{ onOpenShowcase?: () => void }> = ({ onOpenShowcase 
                                        <Sparkles className="w-3.5 h-3.5 mr-1 text-yellow-400 shrink-0" /> SHOWCASE
                                     </button>
                                 )}
-                                {!isInstalled && isInstallable && (
+                                {canInstall && (
                                     <button
                                        onClick={install}
                                        className="py-2.5 px-2 rounded-xl bg-cyan-950/80 border border-cyan-400/60 hover:border-cyan-300 text-cyan-300 font-bold font-mono text-[10px] sm:text-xs flex items-center justify-center transition-all shadow-md hover:bg-cyan-900/50"
