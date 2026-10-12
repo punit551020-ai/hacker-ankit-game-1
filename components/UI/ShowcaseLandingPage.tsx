@@ -35,8 +35,8 @@ interface ShowcaseLandingPageProps {
 }
 
 export const ShowcaseLandingPage: React.FC<ShowcaseLandingPageProps> = ({ onPlayGame }) => {
-  const { isInstallable, isInstalled, isIOS, install } = usePWAInstall();
-  const [showIOSModal, setShowIOSModal] = useState(false);
+  const { isInstallable, isInstalled, isIOS, isAndroid, install } = usePWAInstall();
+  const [showInstallModal, setShowInstallModal] = useState(false);
   const [demoMuted, setDemoMuted] = useState(true);
   const [activeSkinTab, setActiveSkinTab] = useState(0);
 
@@ -331,12 +331,12 @@ export const ShowcaseLandingPage: React.FC<ShowcaseLandingPageProps> = ({ onPlay
 
   const handleInstallClick = async () => {
     if (isInstallable) {
-      await install();
-    } else if (isIOS) {
-      setShowIOSModal(true);
+      const outcome = await install();
+      if (!outcome && !isInstalled) {
+        setShowInstallModal(true);
+      }
     } else {
-      // In standalone browser or if already installed
-      setShowIOSModal(true);
+      setShowInstallModal(true);
     }
   };
 
@@ -383,11 +383,24 @@ export const ShowcaseLandingPage: React.FC<ShowcaseLandingPageProps> = ({ onPlay
             {/* Install App Button */}
             <button
               onClick={handleInstallClick}
-              className="flex items-center px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl font-mono text-xs sm:text-sm font-bold bg-white/10 hover:bg-white/20 border border-white/20 hover:border-cyan-400 transition-all text-white shadow-sm"
+              className={`flex items-center px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl font-mono text-xs sm:text-sm font-bold transition-all shadow-sm ${
+                isInstalled 
+                  ? 'bg-emerald-950/80 border border-emerald-500/50 text-emerald-300' 
+                  : 'bg-white/10 hover:bg-white/20 border border-white/20 hover:border-cyan-400 text-white'
+              }`}
               title="Install Hacker Ankit Game directly to mobile home screen"
             >
-              <Download className="w-4 h-4 mr-1.5 text-cyan-400" />
-              <span className="hidden xs:inline">INSTALL</span> APP
+              {isInstalled ? (
+                <>
+                  <CheckCircle2 className="w-4 h-4 mr-1.5 text-emerald-400" />
+                  <span>INSTALLED</span>
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4 mr-1.5 text-cyan-400" />
+                  <span className="hidden xs:inline">INSTALL</span> APP
+                </>
+              )}
             </button>
 
             {/* Play Online Button */}
@@ -469,10 +482,23 @@ export const ShowcaseLandingPage: React.FC<ShowcaseLandingPageProps> = ({ onPlay
               {/* Big Install Button */}
               <button
                 onClick={handleInstallClick}
-                className="flex-1 sm:flex-initial flex items-center justify-center px-5 py-3.5 rounded-xl font-mono text-sm font-bold bg-white/10 hover:bg-white/20 border border-cyan-400/50 hover:border-cyan-300 text-cyan-300 shadow-[0_0_15px_rgba(0,255,255,0.2)] transition-all"
+                className={`flex-1 sm:flex-initial flex items-center justify-center px-5 py-3.5 rounded-xl font-mono text-sm font-bold transition-all shadow-[0_0_15px_rgba(0,255,255,0.2)] ${
+                  isInstalled
+                    ? 'bg-emerald-950/80 border border-emerald-500/60 text-emerald-300'
+                    : 'bg-white/10 hover:bg-white/20 border border-cyan-400/50 hover:border-cyan-300 text-cyan-300'
+                }`}
               >
-                <Download className="w-4 h-4 mr-2 text-cyan-400" />
-                INSTALL GAME APP
+                {isInstalled ? (
+                  <>
+                    <CheckCircle2 className="w-4 h-4 mr-2 text-emerald-400" />
+                    APP INSTALLED
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4 mr-2 text-cyan-400" />
+                    INSTALL GAME APP
+                  </>
+                )}
               </button>
 
               {/* Big Play Button */}
@@ -690,41 +716,98 @@ export const ShowcaseLandingPage: React.FC<ShowcaseLandingPageProps> = ({ onPlay
         </div>
       </footer>
 
-      {/* --- iOS Safari / Mobile Install Guide Modal --- */}
-      {showIOSModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
-          <div className="w-full max-w-sm rounded-2xl bg-gray-900 border border-cyan-500/40 p-6 shadow-2xl relative">
+      {/* --- Full Mobile & Desktop PWA Install Guide Modal --- */}
+      {showInstallModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
+          <div className="w-full max-w-md rounded-2xl bg-[#0d041e] border border-cyan-500/40 p-6 shadow-2xl relative">
             <button 
-              onClick={() => setShowIOSModal(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-white"
+              onClick={() => setShowInstallModal(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition"
             >
               <X className="w-5 h-5" />
             </button>
             
             <div className="flex items-center space-x-3 mb-4">
-              <div className="p-3 rounded-xl bg-cyan-950 border border-cyan-400/40">
+              <div className="p-3 rounded-xl bg-cyan-950/80 border border-cyan-400/50 shadow-[0_0_15px_rgba(0,255,255,0.3)]">
                 <Download className="w-6 h-6 text-cyan-400" />
               </div>
               <div>
-                <h3 className="font-cyber font-bold text-white text-base">Install App</h3>
-                <p className="text-xs font-mono text-cyan-400">Hacker Ankit Game</p>
+                <h3 className="font-cyber font-bold text-white text-base sm:text-lg">Install to Home Screen</h3>
+                <p className="text-xs font-mono text-cyan-400">Hacker Ankit Game • Standalone PWA</p>
               </div>
             </div>
 
-            <p className="text-xs text-gray-300 leading-relaxed mb-4 font-mono">
-              To install directly to your device home screen:
-            </p>
-            <div className="space-y-2 text-xs font-mono text-gray-200 bg-black/60 p-3 rounded-xl border border-white/10 mb-4">
-              <p>1. Tap the <strong className="text-cyan-300">Share</strong> icon (iOS) or <strong className="text-cyan-300">Three Dots</strong> (Chrome).</p>
-              <p>2. Scroll down and tap <strong className="text-cyan-300">'Add to Home Screen'</strong>.</p>
-              <p>3. Launch directly from your home screen with a standalone app icon!</p>
-            </div>
+            {isInstalled ? (
+              <div className="bg-emerald-950/60 border border-emerald-500/40 p-4 rounded-xl text-center mb-4">
+                <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
+                <h4 className="font-cyber font-bold text-emerald-300 text-sm mb-1">Already Installed!</h4>
+                <p className="text-xs text-gray-300 font-mono">
+                  The game is already installed on your device. Look for the "Hacker Ankit" icon on your home screen or apps list.
+                </p>
+              </div>
+            ) : isInstallable ? (
+              <div className="mb-4">
+                <p className="text-xs text-gray-300 leading-relaxed mb-3 font-mono">
+                  Your browser supports direct one-tap installation:
+                </p>
+                <button
+                  onClick={async () => {
+                    const success = await install();
+                    if (success) setShowInstallModal(false);
+                  }}
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-400 to-teal-400 text-black font-cyber font-bold text-sm hover:brightness-110 shadow-[0_0_20px_rgba(0,255,255,0.4)] flex items-center justify-center transition mb-3"
+                >
+                  <Download className="w-4 h-4 mr-2" /> TAP TO INSTALL NOW
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3 mb-4">
+                {isIOS ? (
+                  <div className="bg-black/60 p-3.5 rounded-xl border border-purple-500/30 text-xs font-mono">
+                    <div className="flex items-center text-purple-300 font-bold mb-2">
+                      <Smartphone className="w-4 h-4 mr-1.5" /> iOS Safari Steps:
+                    </div>
+                    <ol className="list-decimal list-inside space-y-1 text-gray-300">
+                      <li>Tap the <strong className="text-cyan-300">Share button (⎋)</strong> at the bottom of Safari.</li>
+                      <li>Scroll down and tap <strong className="text-cyan-300">'Add to Home Screen'</strong>.</li>
+                      <li>Tap <strong className="text-cyan-300">'Add'</strong> in the top right corner.</li>
+                    </ol>
+                  </div>
+                ) : isAndroid ? (
+                  <div className="bg-black/60 p-3.5 rounded-xl border border-cyan-500/30 text-xs font-mono">
+                    <div className="flex items-center text-cyan-300 font-bold mb-2">
+                      <Smartphone className="w-4 h-4 mr-1.5" /> Android / Chrome Steps:
+                    </div>
+                    <ol className="list-decimal list-inside space-y-1 text-gray-300">
+                      <li>Tap the <strong className="text-cyan-300">Three Dots (⋮)</strong> menu in Chrome.</li>
+                      <li>Select <strong className="text-cyan-300">'Install app'</strong> or <strong className="text-cyan-300">'Add to Home screen'</strong>.</li>
+                      <li>Tap <strong className="text-cyan-300">'Install'</strong> to confirm.</li>
+                    </ol>
+                  </div>
+                ) : (
+                  <div className="bg-black/60 p-3.5 rounded-xl border border-cyan-500/30 text-xs font-mono">
+                    <div className="flex items-center text-cyan-300 font-bold mb-2">
+                      <Laptop className="w-4 h-4 mr-1.5" /> Desktop Chrome / Edge Steps:
+                    </div>
+                    <ol className="list-decimal list-inside space-y-1 text-gray-300">
+                      <li>Look for the <strong className="text-cyan-300">Install icon (⊕)</strong> on the right side of the URL address bar.</li>
+                      <li>Click it and choose <strong className="text-cyan-300">'Install'</strong>.</li>
+                      <li>Or click browser menu (⋮) &gt; <strong className="text-cyan-300">'Save and share' / 'Install Hacker Ankit Game'</strong>.</li>
+                    </ol>
+                  </div>
+                )}
+                
+                <p className="text-[11px] text-gray-400 font-mono">
+                  Once installed, launch the game in fullscreen without browser bars, and play offline anytime!
+                </p>
+              </div>
+            )}
 
             <button
-              onClick={() => setShowIOSModal(false)}
-              className="w-full py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-bold font-mono text-xs transition"
+              onClick={() => setShowInstallModal(false)}
+              className="w-full py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold font-mono text-xs transition border border-white/20"
             >
-              GOT IT
+              CLOSE
             </button>
           </div>
         </div>

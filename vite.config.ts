@@ -26,8 +26,9 @@ export default defineConfig(({ mode }) => {
             'pwa-maskable-512x512.png',
             'manifest.json'
           ],
+          manifestFilename: 'manifest.json',
           manifest: {
-            id: '/',
+            id: './',
             name: 'Hacker Ankit Game',
             short_name: 'Hacker Ankit',
             description: 'High-speed synthwave cyber endless runner with infinite procedural levels, upgradeable mecha skins, and dynamic hazards.',
