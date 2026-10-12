@@ -1,0 +1,33 @@
+{
+  "id": "/",
+  "name": "Hacker Ankit Game",
+  "short_name": "Hacker Ankit",
+  "description": "High-speed synthwave cyber endless runner with infinite procedural levels, upgradeable mecha skins, and dynamic hazards.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#050011",
+  "theme_color": "#050011",
+  "orientation": "any",
+  "categories": ["games", "arcade"],
+  "icons": [
+    {
+      "src": "./pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./pwa-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
