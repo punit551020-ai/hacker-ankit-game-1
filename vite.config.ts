@@ -5,8 +5,9 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
+
     return {
-      // Relative base path ensures deployment on GitHub Pages works seamlessly
+      // Relative base path ensures all assets use relative paths for GitHub Pages
       base: './',
       server: {
         port: 3000,
